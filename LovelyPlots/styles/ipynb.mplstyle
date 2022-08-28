@@ -11,7 +11,7 @@ image.cmap: inferno
 lines.markersize: 6
 
 # turn on scientic notation
-axes.formatter.limits: -1, 4
+axes.formatter.limits: -1, 5
 
 # set text objects edidable in Adobe Illustrator
 pdf.fonttype : 42
