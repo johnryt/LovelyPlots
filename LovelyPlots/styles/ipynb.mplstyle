@@ -1,7 +1,8 @@
 # figure Look
 figure.figsize: 4.5, 3.46
 
-axes.grid: False
+axes.grid: True
+axes.grid.axis: y
 font.size: 14
 
 ytick.left: True
@@ -10,7 +11,7 @@ image.cmap: inferno
 lines.markersize: 6
 
 # turn on scientic notation
-axes.formatter.limits: -1, 1
+axes.formatter.limits: -1, 4
 
 # set text objects edidable in Adobe Illustrator
 pdf.fonttype : 42
@@ -22,7 +23,7 @@ savefig.transparent: True
 #remove white spaces
 savefig.bbox: tight
 
-# resolution 
+# resolution
 figure.dpi: 450
 
 # no latex useth
@@ -37,4 +38,3 @@ legend.frameon : False
 
 # svg font type
 svg.fonttype: none
-
