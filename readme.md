@@ -70,6 +70,10 @@ with plt.style.context('ipynb'):
 
 # Examples
 
+Here is what the twinx2 function does (may require some fiddling with the ylim on the twinned y-axis to get nice-looking values)
+
+![](figs/plots/twinx2-demo.svg)
+
 A few styles are presented here, please see [Styles](#Styles) for a list of all implemented styles. The script used to generate these plots can be found [here](examples/plot.py).
 
 :warning: If you use the ``use_mathtext`` style, ``Adobe Illustrator`` might fail to nicely detect text objects. Please see [here](#Tips-and-Tricks) for work arounds.
