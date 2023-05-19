@@ -8,54 +8,7 @@ from cycler import cycler
 from datetime import datetime
 import matplotlib as mpl
 
-def get_sheet_details(file_path):
-    sheets = []
-    file_name = os.path.splitext(os.path.split(file_path)[-1])[0]
-    # Make a temporary directory with the file name
-    directory_to_extract_to = os.path.join(os.getcwd(), file_name)
-#     print(file_path)
-    try:
-        os.mkdir(directory_to_extract_to)
-    except FileExistsError:
-        shutil.rmtree(directory_to_extract_to)
-        os.mkdir(directory_to_extract_to)
-
-
-    # Extract the xlsx file as it is just a zip file
-    zip_ref = zipfile.ZipFile(file_path, 'r')
-    zip_ref.extractall(directory_to_extract_to)
-    zip_ref.close()
-
-    # Open the workbook.xml which is very light and only has meta data, get sheets from it
-    path_to_workbook = os.path.join(directory_to_extract_to, 'xl', 'workbook.xml')
-    with open(path_to_workbook, 'r') as f:
-        xml = f.read()
-        dictionary = xmltodict.parse(xml)
-        for sheet in dictionary['workbook']['sheets']['sheet']:
-            sheet_details = {
-                'id': sheet['@sheetId'], # can be @sheetId for some versions
-                'name': sheet['@name'] # can be @name
-            }
-            sheets.append(sheet_details)
-
-    # Delete the extracted files directory
-    shutil.rmtree(directory_to_extract_to)
-    return sheets
-
-def get_sheet_details(file_path):
-    sheet_names = []
-    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-        xml = zip_ref.open(r'xl/workbook.xml').read()
-        dictionary = xmltodict.parse(xml)
-
-        if not isinstance(dictionary['workbook']['sheets']['sheet'], list):
-            sheet_names.append(dictionary['workbook']['sheets']['sheet']['@name'])
-        else:
-            for sheet in dictionary['workbook']['sheets']['sheet']:
-                sheet_names.append(sheet['@name'])
-    return sheet_names
-
-def init_plot2(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=4,font_style='bold',have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, markercycler=False, cmap='Dark2', n_colors=8, **kwargs):
+def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=4,font_style='bold',have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, markercycler=False, cmap='Dark2', n_colors=8, **kwargs):
     '''Sets default plot formats.
     Potential inputs: fontsize, figsize, font,
     font_family, font_style, linewidth, have_axes,
@@ -142,7 +95,8 @@ def init_plot2(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif'
 def reduce_mem_usage(df,inplace=False):
     '''Returns dataframe with columns changed to have dtypes of minimum
     size for the values contained within. Does not adjust object dtypes.
-    From https://www.kaggle.com/gemartin/load-data-reduce-memory-usage'''
+    From https://www.kaggle.com/gemartin/load-data-reduce-memory-usage.
+    Does not always do a good job.'''
     if inplace:
         props = df
     else:
@@ -237,17 +191,6 @@ def reduce_mem_usage(df,inplace=False):
     print("Memory usage is: ",mem_usg," MB")
     print("This is ",100*mem_usg/start_mem_usg,"% of the initial size")
     return props
-
-def twinx2(ax1,tw,n=2):
-    '''Primary axis, secondary axis, number of digits to round to (default 2), does not return anything.
-    Sets up secondary y-axis to be aligned with the primary axis ticks.'''
-    l = ax1.get_ylim()
-    l2 = tw.get_ylim()
-    f = lambda x : l2[0]+(x-l[0])/(l[1]-l[0])*(l2[1]-l2[0])
-    ticks = f(ax1.get_yticks())
-    tw.yaxis.set_major_locator(mpl.ticker.FixedLocator(ticks))
-    tw.grid(None)
-    tw.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter('%.'+str(n)+'f'))
 
 def do_a_regress(x,y,ax=0,intercept=True,scatter_color='tab:blue',line_color='k',
                  xlabel='independent var',ylabel='dependent var',log=False,print_log=False,
@@ -444,8 +387,13 @@ def add_labels(x,y,ax):
         ax.text(x.loc[i],y.loc[i],i,ha='center',va='top')
 
 def twinx2(ax1,tw,n=2):
-    '''Primary axis, secondary axis, number of digits to round to (default 2),
-    does not return anything.'''
+    '''If you have a twinned y-axis on both sides of a plot, this function
+    will set the y-ticks of the twinned axis to be at the same location as
+    the y-ticks of the original axis, with n controlling the number of 
+    decimal points displayed.
+    
+    Inputs: Primary axis, secondary axis, number of digits to round to (default 2), does not return anything.
+    Sets up secondary y-axis to be aligned with the primary axis ticks.'''
     l = ax1.get_ylim()
     l2 = tw.get_ylim()
     f = lambda x : l2[0]+(x-l[0])/(l[1]-l[0])*(l2[1]-l2[0])
@@ -645,6 +593,9 @@ def year_decimal_to_datetime(year_decimal):
     the equivalent (to microsecond) datetime form.
     Can be used to convert an entire index, i.e.
     df.index = [year_decimal_to_datetime(j) for j in df.index]
+    
+    Useful for converting something like daily data pulled
+    from a figure using something like webplot digitizer.
     '''
     n_years = np.floor(year_decimal)
     months = (year_decimal-n_years)*12+1
