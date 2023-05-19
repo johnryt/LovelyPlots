@@ -26,6 +26,22 @@ The pip installation will move all of the ``matplotlib`` style files ``*.mplstyl
 
 # Usage
 
+You can use the styles it adds (described farther below), but also can import the many functions from the useful_functions module using
+```python
+from LovelyPlots.useful_packages import *
+```
+The packages included in useful_packages are:
+- init_plot(): allows fine-tuning of matplotlib styles such that you can easily change nearly any aspect on the fly (e.g. default fontsize, color cycler).
+- easy_subplots(): sets up plt.subplots with the correct number of rows and columns and figsize, given number of plots (nplots) and the number of columns (ncol), or just a list that you want to iterate (can then plot the things in the list in a for loop with "for i,a in zip(list, ax)" and it will try to optimize to give either 3 or 4 columns based on lenth of list (or nplots). Option to make figures taller/shorter or wider/narrower by changing height_scale or width_scale. Can also change relative widths/heights of subplots.
+- twinx2(): If you have a twinned y-axis on both sides of a plot, this function will set the y-ticks of the twinned axis to be at the same location as the y-ticks of the original axis, with n controlling the number of decimal points displayed.
+- do_a_regress(): automatically runs a linear regression and plots the results. Can be configued to plot the x vs y data if the regression is in y=mx+b form, or to give predicted vs actual.
+- add_labels(): Add labels to scatter plot for each common index in series x and y, given matplotlib axis object.
+- kstest100(): Takes in series, creates 100 simulated normal distributions from the series mean, std, and length, and returns the mean coefficient and p-value of the Kolmogorov-Smirnov test of the series x and its simulated counterpart.
+- add_regression_text(): adds the regression line equation to a plot of y vs x for model m, showing the equation of the line and R2 goodness of fit. Used within the do_a_regress() function if you don't want to mess with it. 
+- find_best_dist(): takes a stacked dataframe and outputs a list of distributions that best fits that data (Weibull, normal, lognormal, beta, etc.). By default plots the actual and generated data histograms.
+- year_decimal_to_datetime(): Takes in any year-as-decimal value and returns the equivalent (to microsecond) datetime form. Useful for converting something like daily data pulled from a figure using something like webplot digitizer.
+- pval_to_star(): Converts a value from its numerical value to a string where: *** < 0.001 < ** < 0.01 < * < 0.05 < . < 0.1
+
 LovelyPlots main style is called ``ipynb``. To use it, add the following lines to the begining of your python scripts:
 
 ```python
