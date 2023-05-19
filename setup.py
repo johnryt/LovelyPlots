@@ -49,8 +49,8 @@ setup(
     name="LovelyPlots",
     version="0.0.27",
     packages=find_packages(exclude=["tests.*", "tests", "figs", "examples"]),
-    author="Killian Sheriff",
-    author_email="ksheriff@mit.edu",
+    author="Garrett J, Killian Sheriff, John Ryter",
+    author_email="ryterj@mit.edu",
     description="Format Matplotlib Plots for thesis, scientific papers and reports.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -69,6 +69,8 @@ setup(
     url="https://github.com/killiansheriff/LovelyPlots",
     install_requires=[
         "matplotlib",
+        "seaborn",
+        "statsmodels",
     ],
     cmdclass={
         "install": PostInstallMoveFile,
