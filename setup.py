@@ -48,7 +48,7 @@ with open(os.path.join(root, "readme.md"), "r", encoding="utf-8") as f:
 setup(
     name="LovelyPlots",
     version="0.0.27",
-    packages=find_packages(exclude=["tests.*", "tests", "figs", "examples"]),
+    packages=['LovelyPlots'],
     author="Garrett J, Killian Sheriff, John Ryter",
     author_email="ryterj@mit.edu",
     description="Format Matplotlib Plots for thesis, scientific papers and reports.",
