@@ -622,4 +622,4 @@ def pval_to_star(pval, no_star_cut=0.1, period_cut=0.05, one_star_cut=0.01, two_
         pval < no_star_cut else '(.)' if pval < period_cut else ''
     return pval_str
 
-init_plot2()
+init_plot()
