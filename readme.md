@@ -10,11 +10,16 @@ LovelyPlots is a repository containing ``matplotlib`` style sheets to nicely for
 # Installation
 
 ```bash
-# to install latest PyPI release
+# to install latest PyPI release (will not include everything)
 pip install LovelyPlots
+or if that does not work, which it typically does not for me if I am working in a conda environment:
+python3 -m pip install LovelyPlots
 
-# to install latest GitHub commit
+# to install latest GitHub commit (recommended)
 pip install git+https://github.com/johnryt/LovelyPlots
+or if that does not work, which it typically does not for me if I am working in a conda environment:
+python3 -m pip install git+https://github.com/johnryt/LovelyPlots
+
 ```
 
 The pip installation will move all of the ``matplotlib`` style files ``*.mplstyle`` into the appropriate ``matplotlib`` directory.
