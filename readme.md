@@ -33,7 +33,7 @@ from LovelyPlots.useful_packages import *
 The packages included in useful_packages are:
 - init_plot(): allows fine-tuning of matplotlib styles such that you can easily change nearly any aspect on the fly (e.g. default fontsize, color cycler).
 - easy_subplots(): sets up plt.subplots with the correct number of rows and columns and figsize, given number of plots (nplots) and the number of columns (ncol), or just a list that you want to iterate (can then plot the things in the list in a for loop with "for i,a in zip(list, ax)" and it will try to optimize to give either 3 or 4 columns based on lenth of list (or nplots). Option to make figures taller/shorter or wider/narrower by changing height_scale or width_scale. Can also change relative widths/heights of subplots.
-- twinx2(): If you have a twinned y-axis on both sides of a plot, this function will set the y-ticks of the twinned axis to be at the same location as the y-ticks of the original axis, with n controlling the number of decimal points displayed.
+- twinx2(): If you have a twinned y-axis on both sides of a plot, this function will set the y-ticks of the twinned axis to be at the same location as the y-ticks of the original axis, with n controlling the number of decimal points displayed. See an example below.
 - do_a_regress(): automatically runs a linear regression and plots the results. Can be configued to plot the x vs y data if the regression is in y=mx+b form, or to give predicted vs actual.
 - add_labels(): Add labels to scatter plot for each common index in series x and y, given matplotlib axis object.
 - kstest100(): Takes in series, creates 100 simulated normal distributions from the series mean, std, and length, and returns the mean coefficient and p-value of the Kolmogorov-Smirnov test of the series x and its simulated counterpart.
@@ -70,7 +70,7 @@ with plt.style.context('ipynb'):
 
 # Examples
 
-Here is what the twinx2 function does (may require some fiddling with the ylim on the twinned y-axis to get nice-looking values)
+Here is what the twinx2 function does (may require some fiddling with the ylim on the twinned y-axis to get nice-looking values).
 
 ![](figs/plots/twinx2-demo.svg)
 
