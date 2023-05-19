@@ -12,12 +12,12 @@ LovelyPlots is a repository containing ``matplotlib`` style sheets to nicely for
 ```bash
 # to install latest PyPI release (will not include everything)
 pip install LovelyPlots
-or if that does not work, which it typically does not for me if I am working in a conda environment:
+# or if that does not work, which it typically does not for me if I am working in a conda environment:
 python3 -m pip install LovelyPlots
 
 # to install latest GitHub commit (recommended)
 pip install git+https://github.com/johnryt/LovelyPlots
-or if that does not work, which it typically does not for me if I am working in a conda environment:
+# or if that does not work, which it typically does not for me if I am working in a conda environment:
 python3 -m pip install git+https://github.com/johnryt/LovelyPlots
 
 ```
