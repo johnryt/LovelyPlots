@@ -8,7 +8,7 @@ from cycler import cycler
 from datetime import datetime
 import matplotlib as mpl
 
-def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=4,font_style='bold',have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, markercycler=False, cmap='Dark2', n_colors=8, **kwargs):
+def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=5,font_style='bold',have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, markercycler=False, cmap='Dark2', n_colors=8, grid='y', **kwargs):
     '''Sets default plot formats.
     Potential inputs: fontsize, figsize, font,
     font_family, font_style, linewidth, have_axes,
@@ -18,9 +18,35 @@ def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',
     on the plot. Also has **kwargs so that any other
     arguments that can be passed to mpl.rcParams.update
     that were not listed above.
-
-    cmap can take any matplotlib colormap string.'''
+    ----------------------------------------
+    Inputs:
+    - fontsize: int, default 20
+    - figsize: tuple, default (8,5.5)
+    - font: str, default Arial
+    - font_family: str, default sans-serif
+    - linewidth: int or float, default 5
+    - font_style: str, default bold
+    - have_axes: boolean, default True, lets you remove the borders from your figures
+    - dpi: int, dots per inch, controls figure resolution
+    - marker: None or str, default marker style for lines in plt.plot
+    - markersize: int or float, size of default marker
+    - markeredgewidth: int or float, border/edge width for default marker
+    - markeredgecolor: str or tuple, color for default marker border/edge
+    - markerfacecolor: str or tuple, color for default marker body/face
+    - markercycler: bool or list of markers. If True, sets up the axes.prop_cycle rcParam using a preset marker cycling, and using colors from the cmap given in accordance with n_colors. Can also give a list/array of markers yourself
+    - cmap: str or list, can take any matplotlib colormap string, as well as john-map, john-defense, john-defense-dark.
+    - n_colors: int, number of colors used in creating the colors pulled from cmap, but only if using markercycler!=False, where the colors pulled from cmap are np.linspace(0,1,n_colors)
+    - grid: bool or str, str in ['y','x','both']. If True, sets y grid by default, no grid if False
+    '''
     import matplotlib as mpl
+    cmap_dict = {
+        'john-map': ['#22538E','#367A4C','#88393D','#92339A','#3A8386','#B88958'],
+        'john-defense': ['#37735A','#CA6627','#48466E','#8D295A','#475368','#8E8127'],
+        'john-defense-dark': ['#295742','#93481C','#2E2C45','#5B1B3B','#343D4D','#695F1C'],
+    }
+    if type(cmap)==str and cmap in cmap_dict:
+        cmap = cmap_dict[cmap]
+    
     params = {
         'axes.labelsize': fontsize,
         'font.size': fontsize,
@@ -70,8 +96,8 @@ def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',
     mpl.rcParams['axes.spines.top'] = have_axes
     mpl.rcParams['axes.spines.bottom'] = have_axes
     mpl.rcParams['axes.axisbelow'] = True
-    mpl.rcParams['axes.grid'] = True
-    mpl.rcParams['axes.grid.axis'] = 'y'
+    mpl.rcParams['axes.grid'] = grid if type(grid)==bool else True
+    mpl.rcParams['axes.grid.axis'] = 'y' if type(grid)==bool else grid
     mpl.rcParams['grid.color'] = '0.9'
     mpl.rcParams['grid.linewidth'] = 1
     mpl.rcParams['grid.linestyle'] = '-'
@@ -84,10 +110,13 @@ def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',
         mpl.rcParams['lines.markeredgecolor'] = markeredgecolor
     if markerfacecolor != None:
         mpl.rcParams['lines.markerfacecolor'] = markerfacecolor
-    if markercycler:
+    markers = ["o","s","^","v","p","8","P","X"]
+    if type(markercycler)!=bool:
+        markers = markercycler
+        markercycler = True
+    if type(markercycler)==bool and markercycler:
         cmap_colors = mpl.cm.get_cmap(cmap)
         colors = [cmap_colors(i) for i in np.linspace(0,1,n_colors)]
-        markers = ["o","s","^","v","p","8","P","X"]
         if n_colors>8: markers = np.tile(markers,int(np.floor(n_colors/8)+1))
         markers = markers[:n_colors]
         mpl.rcParams['axes.prop_cycle'] =  cycler('color',colors) + cycler('marker',markers)
