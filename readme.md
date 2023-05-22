@@ -74,6 +74,14 @@ Here is what the twinx2 function does (may require some fiddling with the ylim o
 
 ![](figs/plots/twinx2-demo.svg)
 
+When changing local defaults using the init_plot function, can use any of the built-in matplotlib cmaps, as well as any list/array of colors you like, or any of the three strings I've added: john-map, john-defense, john-defense-dark:
+![](figs/colors/john-map.png)
+'john-map'
+![](figs/colors/john-defense.png)
+'john-defense'
+![](figs/colors/john-defense-dark.png)
+'john-defense-dark'
+
 A few styles are presented here, please see [Styles](#Styles) for a list of all implemented styles. The script used to generate these plots can be found [here](examples/plot.py).
 
 :warning: If you use the ``use_mathtext`` style, ``Adobe Illustrator`` might fail to nicely detect text objects. Please see [here](#Tips-and-Tricks) for work arounds.
