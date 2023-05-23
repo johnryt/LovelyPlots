@@ -8,7 +8,7 @@ from cycler import cycler
 from datetime import datetime
 import matplotlib as mpl
 
-def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=5,font_style='bold',have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, markercycler=False, cmap='Dark2', n_colors=8, grid='y', **kwargs):
+def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=4,font_style='bold',have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, markercycler=False, cmap='Dark2', n_colors=8, grid='y', **kwargs):
     '''Sets default plot formats.
     Potential inputs: fontsize, figsize, font,
     font_family, font_style, linewidth, have_axes,
