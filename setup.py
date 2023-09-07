@@ -13,6 +13,7 @@ import atexit
 import glob
 import os
 import shutil
+from subprocess import run
 
 import matplotlib
 from setuptools import setup, find_packages
@@ -77,3 +78,5 @@ setup(
     },
     include_package_data=True,
 )
+
+run(["conda", "env", "create", "-f", "glombo.yml"])
