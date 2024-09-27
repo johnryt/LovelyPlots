@@ -7,8 +7,90 @@ import seaborn as sns
 from cycler import cycler
 from datetime import datetime
 import matplotlib as mpl
+import os
+import re
+import shutil
+import zipfile
+from string import printable as character_list
+import xmltodict
+from scipy import stats
+import cProfile
+import io
+import pstats
+from linearmodels.panel import compare
 
-def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=4,font_style='bold',have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, markercycler=False, cmap='Dark2', n_colors=8, grid='y', **kwargs):
+
+def get_sheet_details(file_path):
+    sheets = []
+    file_name = os.path.splitext(os.path.split(file_path)[-1])[0]
+    # Make a temporary directory with the file name
+    directory_to_extract_to = os.path.join(os.getcwd(), file_name)
+#     print(file_path)
+    try:
+        os.mkdir(directory_to_extract_to)
+    except FileExistsError:
+        shutil.rmtree(directory_to_extract_to)
+        os.mkdir(directory_to_extract_to)
+
+
+    # Extract the xlsx file as it is just a zip file
+    zip_ref = zipfile.ZipFile(file_path, 'r')
+    zip_ref.extractall(directory_to_extract_to)
+    zip_ref.close()
+
+    # Open the workbook.xml which is very light and only has meta data, get sheets from it
+    path_to_workbook = os.path.join(directory_to_extract_to, 'xl', 'workbook.xml')
+    with open(path_to_workbook, 'r') as f:
+        xml = f.read()
+        dictionary = xmltodict.parse(xml)
+        for sheet in dictionary['workbook']['sheets']['sheet']:
+            sheet_details = {
+                'id': sheet['@sheetId'], # can be @sheetId for some versions
+                'name': sheet['@name'] # can be @name
+            }
+            sheets.append(sheet_details)
+
+    # Delete the extracted files directory
+    shutil.rmtree(directory_to_extract_to)
+    return sheets
+
+def get_sheet_details(file_path):
+    sheet_names = []
+    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+        xml = zip_ref.open(r'xl/workbook.xml').read()
+        dictionary = xmltodict.parse(xml)
+
+        if not isinstance(dictionary['workbook']['sheets']['sheet'], list):
+            sheet_names.append(dictionary['workbook']['sheets']['sheet']['@name'])
+        else:
+            for sheet in dictionary['workbook']['sheets']['sheet']:
+                sheet_names.append(sheet['@name'])
+    return sheet_names
+
+def can_be_int(i):
+    try:
+        int(i)
+        return True
+    except:
+        return False
+    
+def init_plot_simple():
+    mpl.rcParams['legend.framealpha'] = 1
+    mpl.rcParams['legend.frameon'] = False
+    mpl.rcParams['axes.axisbelow'] = True
+    mpl.rcParams['axes.grid'] = True
+    mpl.rcParams['axes.grid.axis'] = 'both'
+    mpl.rcParams['grid.color'] = '0.9'
+    mpl.rcParams['grid.linewidth'] = 1
+    mpl.rcParams['grid.linestyle'] = '-'
+    mpl.rcParams['axes.labelweight'] = 'bold'
+    mpl.rcParams['font.weight'] = 'bold'
+    mpl.rcParams['axes.titleweight'] = 'bold'
+    sns.set_palette('Dark2')
+
+def init_plot2(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',linewidth=4,font_style='bold',
+               have_axes=True,dpi=50,marker='None',markersize=12,markeredgewidth=1.0,markeredgecolor=None,markerfacecolor=None, 
+               markercycler=False, linestylecycler=False, cmap='Dark2', n_colors=8, **kwargs):
     '''Sets default plot formats.
     Potential inputs: fontsize, figsize, font,
     font_family, font_style, linewidth, have_axes,
@@ -18,35 +100,12 @@ def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',
     on the plot. Also has **kwargs so that any other
     arguments that can be passed to mpl.rcParams.update
     that were not listed above.
-    ----------------------------------------
-    Inputs:
-    - fontsize: int, default 20
-    - figsize: tuple, default (8,5.5)
-    - font: str, default Arial
-    - font_family: str, default sans-serif
-    - linewidth: int or float, default 5
-    - font_style: str, default bold
-    - have_axes: boolean, default True, lets you remove the borders from your figures
-    - dpi: int, dots per inch, controls figure resolution
-    - marker: None or str, default marker style for lines in plt.plot
-    - markersize: int or float, size of default marker
-    - markeredgewidth: int or float, border/edge width for default marker
-    - markeredgecolor: str or tuple, color for default marker border/edge
-    - markerfacecolor: str or tuple, color for default marker body/face
-    - markercycler: bool or list of markers. If True, sets up the axes.prop_cycle rcParam using a preset marker cycling, and using colors from the cmap given in accordance with n_colors. Can also give a list/array of markers yourself
-    - cmap: str or list, can take any matplotlib colormap string, as well as john-map, john-defense, john-defense-dark.
-    - n_colors: int, number of colors used in creating the colors pulled from cmap, but only if using markercycler!=False, where the colors pulled from cmap are np.linspace(0,1,n_colors)
-    - grid: bool or str, str in ['y','x','both']. If True, sets y grid by default, no grid if False
-    '''
+
+    markercycler: bool, if True, sets the cycler to include a set of markers
+    linestylecycler: bool, if True, sets the cycler to include the 4 linestyles
+
+    cmap can take any matplotlib colormap string.'''
     import matplotlib as mpl
-    cmap_dict = {
-        'john-map': ['#22538E','#367A4C','#88393D','#92339A','#3A8386','#B88958'],
-        'john-defense': ['#37735A','#CA6627','#48466E','#8D295A','#475368','#8E8127'],
-        'john-defense-dark': ['#295742','#93481C','#2E2C45','#5B1B3B','#343D4D','#695F1C'],
-    }
-    if type(cmap)==str and cmap in cmap_dict:
-        cmap = cmap_dict[cmap]
-    
     params = {
         'axes.labelsize': fontsize,
         'font.size': fontsize,
@@ -90,14 +149,13 @@ def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',
         }
 
     mpl.rcParams.update(params)
-    mpl.rcParams.update(**kwargs)
     mpl.rcParams['axes.spines.left'] = have_axes
     mpl.rcParams['axes.spines.right'] = have_axes
     mpl.rcParams['axes.spines.top'] = have_axes
     mpl.rcParams['axes.spines.bottom'] = have_axes
     mpl.rcParams['axes.axisbelow'] = True
-    mpl.rcParams['axes.grid'] = grid if type(grid)==bool else True
-    mpl.rcParams['axes.grid.axis'] = 'y' if type(grid)==bool else grid
+    mpl.rcParams['axes.grid'] = True
+    mpl.rcParams['axes.grid.axis'] = 'both'
     mpl.rcParams['grid.color'] = '0.9'
     mpl.rcParams['grid.linewidth'] = 1
     mpl.rcParams['grid.linestyle'] = '-'
@@ -110,22 +168,72 @@ def init_plot(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif',
         mpl.rcParams['lines.markeredgecolor'] = markeredgecolor
     if markerfacecolor != None:
         mpl.rcParams['lines.markerfacecolor'] = markerfacecolor
-    markers = ["o","s","^","v","p","8","P","X"]
-    if type(markercycler)!=bool:
-        markers = markercycler
-        markercycler = True
-    if type(markercycler)==bool and markercycler:
+    try:
+        cmap_colors = plt.get_cmap(cmap)
+    except:
         cmap_colors = mpl.cm.get_cmap(cmap)
-        colors = [cmap_colors(i) for i in np.linspace(0,1,n_colors)]
+    colors = [cmap_colors(i) for i in np.linspace(0,1,n_colors)]
+    
+    default_cycler = cycler('color',colors)
+    if markercycler:
+        markers = ["o","s","^","v","p","8","P","X"]
         if n_colors>8: markers = np.tile(markers,int(np.floor(n_colors/8)+1))
         markers = markers[:n_colors]
-        mpl.rcParams['axes.prop_cycle'] =  cycler('color',colors) + cycler('marker',markers)
+        default_cycler = default_cycler+cycler('marker',markers)
+    if linestylecycler:
+        linestyles = ['-','--',':','-.']
+        if n_colors>4: linestyles = np.tile(linestyles,int(np.floor(n_colors/4)+1))
+        linestyles = linestyles[:n_colors]
+        default_cycler = default_cycler+cycler('linestyle',linestyles)
+    mpl.rcParams['axes.prop_cycle'] = default_cycler
+    mpl.rcParams.update(**kwargs)
 
+def plot_back_to_default_style():
+    mpl.rcParams.update(mpl.rcParamsDefault)
+    
+def custom_legend(ax, labels, shapes, colors, kwargs=None, legend_kwargs={}):
+    """
+    ax:     axes on which to plot the legend
+    labels: list of strings for labels of each element
+    shapes: list of strings for type of shape for each element, can be `line` or `patch`
+    colors: list of strings for colors of each element
+    kwargs: list of dicts with additional arguments to be passed to each line or patch function
+    legend_kwargs: dict, arguments to be passed to the legend function call
+
+    all among labels, shapes, colors, and kwargs must be the same length (kwargs can also be left as None)
+    """
+    line = mpl.lines.Line2D
+    patch = mpl.patches.Patch
+    kwargs = [{} for i in range(len(labels))] if kwargs is None else kwargs
+    if type(shapes)==str:
+        shapes = np.repeat([shapes],len(labels))
+    legend_elements = [
+        line([0], [0], color=colors[i], label=labels[i], **kwargs[i]) if shapes[i]=='line' else 
+        patch(facecolor=colors[i], label=labels[i], **kwargs[i]) for i in range(len(labels))
+    ]
+    ax.legend(handles=legend_elements, **legend_kwargs)
+
+def close_all_plots():
+    for _ in range(100):
+        plt.close()
+
+def is_pareto_efficient_dumb(costs):
+    """
+    From https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+
+    Find the pareto-efficient points
+    :param costs: An (n_points, n_costs) array
+    :return: A (n_points, ) boolean array, indicating whether each point is Pareto efficient
+    """
+    is_efficient = np.ones(costs.shape[0], dtype = bool)
+    for i, c in enumerate(costs):
+        is_efficient[i] = np.all(np.any(costs[:i]>c, axis=1)) and np.all(np.any(costs[i+1:]>c, axis=1))
+    return is_efficient
+        
 def reduce_mem_usage(df,inplace=False):
     '''Returns dataframe with columns changed to have dtypes of minimum
     size for the values contained within. Does not adjust object dtypes.
-    From https://www.kaggle.com/gemartin/load-data-reduce-memory-usage.
-    Does not always do a good job.'''
+    From https://www.kaggle.com/gemartin/load-data-reduce-memory-usage'''
     if inplace:
         props = df
     else:
@@ -220,6 +328,17 @@ def reduce_mem_usage(df,inplace=False):
     print("Memory usage is: ",mem_usg," MB")
     print("This is ",100*mem_usg/start_mem_usg,"% of the initial size")
     return props
+
+def twinx2(ax1,tw,n=2):
+    '''Primary axis, secondary axis, number of digits to round to (default 2), does not return anything.
+    Sets up secondary y-axis to be aligned with the primary axis ticks.'''
+    l = ax1.get_ylim()
+    l2 = tw.get_ylim()
+    f = lambda x : l2[0]+(x-l[0])/(l[1]-l[0])*(l2[1]-l2[0])
+    ticks = f(ax1.get_yticks())
+    tw.yaxis.set_major_locator(mpl.ticker.FixedLocator(ticks))
+    tw.grid(None)
+    tw.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter('%.'+str(n)+'f'))
 
 def do_a_regress(x,y,ax=0,intercept=True,scatter_color='tab:blue',line_color='k',
                  xlabel='independent var',ylabel='dependent var',log=False,print_log=False,
@@ -416,13 +535,8 @@ def add_labels(x,y,ax):
         ax.text(x.loc[i],y.loc[i],i,ha='center',va='top')
 
 def twinx2(ax1,tw,n=2):
-    '''If you have a twinned y-axis on both sides of a plot, this function
-    will set the y-ticks of the twinned axis to be at the same location as
-    the y-ticks of the original axis, with n controlling the number of 
-    decimal points displayed.
-    
-    Inputs: Primary axis, secondary axis, number of digits to round to (default 2), does not return anything.
-    Sets up secondary y-axis to be aligned with the primary axis ticks.'''
+    '''Primary axis, secondary axis, number of digits to round to (default 2),
+    does not return anything.'''
     l = ax1.get_ylim()
     l2 = tw.get_ylim()
     f = lambda x : l2[0]+(x-l[0])/(l[1]-l[0])*(l2[1]-l2[0])
@@ -622,9 +736,6 @@ def year_decimal_to_datetime(year_decimal):
     the equivalent (to microsecond) datetime form.
     Can be used to convert an entire index, i.e.
     df.index = [year_decimal_to_datetime(j) for j in df.index]
-    
-    Useful for converting something like daily data pulled
-    from a figure using something like webplot digitizer.
     '''
     n_years = np.floor(year_decimal)
     months = (year_decimal-n_years)*12+1
@@ -651,4 +762,300 @@ def pval_to_star(pval, no_star_cut=0.1, period_cut=0.05, one_star_cut=0.01, two_
         pval < no_star_cut else '(.)' if pval < period_cut else ''
     return pval_str
 
-init_plot()
+def profile_with_cpython(evaluation_string, filename='compile_time'):
+    if True:
+        pr = cProfile.Profile()
+        pr.enable()
+        exec(evaluation_string)
+        pr.disable()
+        s = io.StringIO()
+        # ps = pstats.Stats(pr, stream=s).sort_stats()
+        ps = pstats.Stats(pr, stream=s).sort_stats('cumtime')
+        ps.print_stats()
+        with open(filename, 'w+') as f:
+            f.write(s.getvalue())
+
+def add_axis_labels(fig, option='ylabel_width', xloc=-0.1, yloc=1.03, zloc=None, skip=None, alt_xlocs=False, start_letter=0):
+    """
+    Adds lettering to each figure for scientific publication figures.
+    Option input can be any in [`price_middle_column`,`subset1`,`all`,`subset2`],
+    otherwise uses the xloc and yloc values given. Option inputs allow for
+    changes based on xtick characteristics
+
+    price_middle_column: largest left offset from y axis
+    subset1: smallest offset
+    all: equivalent to subset1
+    subset2: moderate offset
+    """
+    skip = [skip] if type(skip)==int else skip if skip is not None else []
+    chars = character_list[10:36][start_letter:]
+    ax = fig.axes
+    ax = [a for e,a in enumerate(ax) if e not in skip]
+    if alt_xlocs:
+        xlocs     = {1:-0.09, 2:-0.12, 3:-0.15, 4:-0.18, 5:-0.21, 6:-0.24, 7:-0.27, 8:-0.30}
+        xlocs_dec = {1:-0.11, 2:-0.14, 3:-0.17, 4:-0.20, 5:-0.23, 6:-0.26, 7:-0.29, 8:-0.32}
+    else:
+        xlocs     = {1:-0.06, 2:-0.12, 3:-0.15, 4:-0.18, 5:-0.21, 6:-0.24, 7:-0.27, 8:-0.30}
+        xlocs_dec = {1:-0.11, 2:-0.14, 3:-0.17, 4:-0.20, 5:-0.23, 6:-0.26, 7:-0.29, 8:-0.32}
+    for label,a in zip(chars, ax):
+        xticks = len(a.get_xticks())
+        ylabel_width = max([len(str(i).split("'")[1].split("'")[0]) for i in a.get_yticklabels()])
+        ylabel_width_no_dec = max([len(str(i).split("'")[1].split("'")[0].replace('.','')) for i in a.get_yticklabels()])
+        has_dec = ylabel_width!=ylabel_width_no_dec
+        if option=='ylabel_width':
+            xloc = xlocs_dec[ylabel_width_no_dec] if has_dec else xlocs[ylabel_width]
+        elif option=='price_middle_column':
+            xloc = -0.21 if a in ax[1::3] else -0.17
+            yloc = 1.02
+        elif option in ['subset1','all']:
+            xloc = -0.035 if xticks>10 else -0.07 if xticks>7 else -0.08
+            yloc = 1.03
+        elif option=='subset2':
+            xloc = -0.05 if xticks>6 else -0.08 if xticks>4 else -0.13 if xticks>3 else -0.18
+            yloc = 1.03
+        
+        if zloc is None:
+            a.text(xloc,yloc,label+')', transform=a.transAxes)
+        else:
+            try:
+                a.text2D(xloc,yloc,label+')', transform=a.transAxes)
+            except:
+                a.text(xloc,yloc,label+')', transform=a.transAxes)
+
+def get_line_intersection(line1_point1, line1_point2, line2_point1, line2_point2):
+    """
+    Finds the intersection point between two lines defined by two points each.
+
+    Args:
+        point1 (tuple): First point (x1, y1) on the first line.
+        point2 (tuple): Second point (x2, y2) on the first line.
+
+    Returns:
+        tuple: Intersection point (x, y) of the two lines.
+    """
+    x1, y1 = line1_point1
+    x2, y2 = line1_point2
+
+    # Calculate the slope of the first line
+    slope1 = (y2 - y1) / (x2 - x1)
+
+    # Calculate the y-intercept of the first line
+    intercept1 = y1 - slope1 * x1
+
+    x1, y1 = line2_point1
+    x2, y2 = line2_point2
+
+    # Calculate the slope of the second line
+    slope2 = (y2 - y1) / (x2 - x1)
+
+    # Calculate the y-intercept of the second line
+    intercept2 = y1 - slope2 * x1
+
+    # Calculate the x-coordinate of the intersection point
+    x_intersection = (intercept1 - intercept2) / (slope2 - slope1)
+    
+    # Calculate the y-coordinate of the intersection point
+    y_intersection = slope1 * x_intersection + intercept1
+
+    return x_intersection, y_intersection
+
+
+def get_surface_intersections(surface1, surface2):
+    """
+    Surface 1 and Surface 2 should each be in the form (x,y,z) that is capable of being plotted using
+    ax.plot_trisurf, and should share the same x and y values. Returns array of intersection values
+    in the same (x,y,z) coordinate system, where ax.plot(x,y,z) should give the intersection line. 
+    """
+    inter_prices = np.unique(surface1[1])
+    intersections = np.zeros([inter_prices.shape[0],3])
+    for i,inter_price in enumerate(inter_prices):
+        inter = surface1[1]==inter_price
+        price_inter = surface1[0][inter]
+        prod_inter  = surface1[2][inter]
+        prod_inter_d  = surface2[2][inter]
+        rmse_inter = prod_inter-prod_inter_d
+        rmse_inter1 = rmse_inter[rmse_inter>0]
+        rmse_inter2 = rmse_inter[rmse_inter<0]    
+        if len(rmse_inter1)==0 or len(rmse_inter2)==0:
+            rmse_inter = ((prod_inter-prod_inter_d)**2)
+            min_rmse_idx_inter1 = np.nanargmin(rmse_inter)
+            rmse_inter[rmse_inter==rmse_inter[min_rmse_idx_inter1]] = np.inf
+            min_rmse_idx_inter2 = np.nanargmin(rmse_inter)
+        else:
+            min_rmse_idx_inter1 = np.nanargmax(np.min(rmse_inter1)==rmse_inter)
+            min_rmse_idx_inter2 = np.nanargmax(np.max(rmse_inter2)==rmse_inter)
+            # min_rmse_idx_inter1 = np.nanargmin(rmse_inter1)
+            # min_rmse_idx_inter2 = np.nanargmax(rmse_inter2)
+
+        x = price_inter[min_rmse_idx_inter1], price_inter[min_rmse_idx_inter2]
+        if x[0]==x[1]:
+            x = price_inter[min_rmse_idx_inter1], price_inter[min_rmse_idx_inter2]+1e-9
+        y1 = prod_inter[min_rmse_idx_inter1], prod_inter[min_rmse_idx_inter2]
+        y2 = prod_inter_d[min_rmse_idx_inter1], prod_inter_d[min_rmse_idx_inter2]
+        intersect = get_line_intersection([x[0],y1[0]], [x[1], y1[1]], [x[0],y2[0]], [x[1], y2[1]])
+        intersections[i] = [intersect[0], inter_price, intersect[1]] # (price_0, pirce_1, production)
+    return intersections
+
+def try_float_conversion(string):
+    try:
+        return float(string)
+    except:
+        return string
+
+def str_to_dict(string):
+    new_string = re.sub(r"\{*\}*",'',string)
+    str_list = re.findall("'\w+':\s*[0-9a-zA-z-.]*",new_string)
+    new_dict = {i.split(':')[0].replace('"','').replace("'",''): try_float_conversion(''.join(i.split(':')[1:]).replace('"','').replace("'",'')) for i in str_list}
+    return new_dict
+
+def AIC_linearmodels(panel_model):
+    """ 
+    For use with linearmodels panel regression models.
+    
+    Eqn from https://www.statology.org/aic-in-python/
+    """
+    L=panel_model.loglik
+    K=panel_model.df_model+2
+    return 2*K - 2*L
+
+def hausman_linearmodels(fe, re):
+    """
+    Input fe, re
+    
+    If p<0.05, should use fixed effects
+
+    Compute hausman test for fixed effects/random effects models
+    b = beta_fe
+    B = beta_re
+    From theory we have that b is always consistent, but B is consistent
+    under the alternative hypothesis and efficient under the null.
+    The test statistic is computed as
+    z = (b - B)' [V_b - v_B^{-1}](b - B)
+    The statistic is distributed z \sim \chi^2(k), where k is the number
+    of regressors in the model.
+    Parameters
+    ==========
+    fe : statsmodels.regression.linear_panel.PanelLMWithinResults
+        The results obtained by using sm.PanelLM with the
+        method='within' option.
+    re : statsmodels.regression.linear_panel.PanelLMRandomResults
+        The results obtained by using sm.PanelLM with the
+        method='swar' option.
+    Returns
+    =======
+    chi2 : float
+        The test statistic
+    df : int
+        The number of degrees of freedom for the distribution of the
+        test statistic
+    pval : float
+        The p-value associated with the null hypothesis
+    
+    Notes
+    =====
+    The null hypothesis supports the claim that the random effects
+    estimator is "better". If we reject this hypothesis it is the same
+    as saying we should be using fixed effects because there are
+    systematic differences in the coefficients.
+    
+    Tests whether random effects estimator can be used, since it is 
+    more efficient but can be biased, so if the fixed and random 
+    effects estimators are not equal, the fixed effects estimator 
+    is the correct/consistent one.
+    
+    If p<0.05, should use fixed effects
+    """
+    
+    import numpy.linalg as la
+    
+    # Pull data out
+    b = fe.params
+    B = re.params
+    v_b = fe.cov
+    v_B = re.cov
+
+    # NOTE: find df. fe should toss time-invariant variables, but it
+    #       doesn't. It does return garbage so we use that to filter
+    df = b[np.abs(b) < 1e8].size
+
+    # compute test statistic and associated p-value
+    chi2 = np.dot((b - B).T, la.inv(v_b - v_B).dot(b - B))
+    pval = stats.chi2.sf(chi2, df)
+
+    return chi2, df, pval
+
+def pesaran_cd_test(model):
+    """
+    Implemented as described in section 2.1 of Hoyos and Sarafidis, "Testing for cross-sectional dependence in panel-data models", The Stata Journal (2006).
+    https://journals.sagepub.com/doi/pdf/10.1177/1536867X0600600403
+
+    Requires that the model have the attribute `resids`, and that it is a pandas Series with 2-level multi-index where the second level is the time index.
+
+    Model must be balanced (can add unbalanced functionality using the paper cited above, there is a method)
+
+    Returns (coefficient, pvalue)
+    """
+    u_hat = model.resids.unstack().values
+    N,T = u_hat.shape
+    i_size = N
+    j_size = i_size-1
+
+    rho_hat = np.zeros([i_size,i_size])
+    for i in range(i_size):
+        j_inds = [k for k in range(i_size) if k!=i]
+        u_i = u_hat[i,:]
+        for j in j_inds:
+            u_j = u_hat[j,:]
+            rho_hat[i,j] = np.sum(u_i*u_j) / \
+                ((np.sum(u_i**2)**0.5) * (np.sum(u_j**2)**0.5))
+    CD = ((2*T)/(N*(N-1)))**0.5 * np.sum([np.sum(rho_hat[i,i+1:]) for i in range(i_size-1)])
+    pvalue = stats.norm.sf(abs(CD))*2
+    return CD, pvalue
+        
+def convert_compare_to_df(result_dict, parens='std_errors'):
+    '''
+    Converts the outputs of the linearmodels.panel.compare method into a pandas dataframe so it can be more easily copied and/or saved
+
+    result_dict: dict, with keys the names of the models and values the models being compared
+    parens: str, options are std_errors or t_stats, changes the values displayed in the parentheses; default is standard errors
+    '''
+    comp = compare(result_dict)
+    properties = {
+        'estimator_method': 'Estimator',
+        'nobs': 'No. Observations',
+        'cov_estimator': 'Cov. Est.',
+        'rsquared': 'R-Squared',
+        'rsquared_within': 'R-Squared (Within)',
+        'rsquared_between': 'R-Squared (Between)',
+        'rsquared_overall': 'R-Squared (Overall)',
+        'f_statistic': 'F-statistic',
+        'params': 'Parameters',
+        'pvalues': 'P-values',
+        'std_errors': 'Standard Errors',
+    }
+    prop_keys = [s for s in properties.keys() if len(getattr(comp,s).shape)<=1 or getattr(comp,s).shape[1]<2]
+    outputs = pd.concat([getattr(comp,s) for s in prop_keys], keys=prop_keys, axis=1).T.rename(properties)
+    for r in [i for i in outputs.index if 'R-Sq' in i]:
+        outputs.loc[r,:] = ['{:.3f}'.format(k) for k in outputs.loc[r].values]
+    params = comp.params.copy()
+    std_errors = comp.std_errors if parens=='std_errors' else comp.tstats
+    pvals = comp.pvalues
+    for i in params.index:
+        for c in params.columns:
+            params.loc[i,c] = '' if params.isna()[c][i] else '{:.3f}{:s}\n({:.3f})'.format(params[c][i], pval_to_star(pvals[c][i]), std_errors[c][i])
+    if hasattr(params.index,'get_level_values'):
+        params.index = [f'{i[1]} {i[0]}' for i in params.index]
+    fstat = comp.f_statistic.T.rename({'F stat':'F-statistic','P-value':'P-value (F-stat)'})
+    fstat.loc['F-statistic', :] = ['{:.2f}'.format(i) for i in fstat.loc['F-statistic', :].values]
+    fstat.loc['P-value (F-stat)', fstat.loc['P-value (F-stat)']<1e-6] = ['{:.3e}'.format(i) for i in fstat.loc['P-value (F-stat)', fstat.loc['P-value (F-stat)']<1e-6].values]
+    effects = pd.DataFrame([','.join(k.included_effects) for k in result_dict.values()], index=result_dict.keys(), columns=['Effects']).T
+    outputs = pd.concat([
+        pd.DataFrame(outputs.columns, columns=['Dep. Variable'], index=outputs.columns).T,
+        outputs,
+        fstat,
+        params,
+        effects
+    ])
+    return outputs
+
+init_plot2()
