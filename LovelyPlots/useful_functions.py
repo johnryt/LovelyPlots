@@ -18,6 +18,7 @@ import cProfile
 import io
 import pstats
 from linearmodels.panel import compare
+import pickle
 
 
 def get_sheet_details(file_path):
@@ -73,6 +74,26 @@ def can_be_int(i):
         return True
     except:
         return False
+    
+def can_be_float(i):
+    try:
+        float(i)
+        return True
+    except:
+        return False
+    
+def create_html_table_from_dataframe(df, separate_first_header=False):
+    from dash import html
+    
+    if separate_first_header:
+        out_head = [html.Th(separate_first_header, style={'text-align':'left'})]+[html.Th(i, style={'text-align':'center'}) for i in df.columns[1:]]
+    else:
+        out_head = [html.Th(i, style={'text-align':'center'}) for i in df.columns]
+    out_rows = [html.Tr([html.Td(i, style={'text-align':'center'}) for i in k]) for k in df.values]
+    out_table = html.Table(children=[html.Thead(out_head), html.Tbody(out_rows)],
+        style={'margin-top': '20px', 'width': '100%', 'border': '1px solid black', 'border-collapse': 'collapse'}
+    )
+    return out_table
     
 def init_plot_simple():
     mpl.rcParams['legend.framealpha'] = 1
@@ -182,7 +203,28 @@ def init_plot2(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif'
         default_cycler = default_cycler+cycler('marker',markers)
     if linestylecycler:
         linestyles = ['-','--',':','-.']
-        if n_colors>4: linestyles = np.tile(linestyles,int(np.floor(n_colors/4)+1))
+        linestyle_tuple = [
+            (0, (1, 10)), # 'loosely dotted',
+            (0, (1, 5)), # 'dotted',
+            (0, (1, 1)), # 'densely dotted',
+
+            (5, (10, 3)), # 'long dash with offset
+            (0, (5, 10)), # 'loosely dashed',
+            (0, (5, 5)), # 'dashed',
+            (0, (5, 1)), # 'densely dashed',
+
+            (0, (3, 10, 1, 10)), # 'loosely dashdotted',
+            (0, (3, 5, 1, 5)), # 'dashdotted',
+            (0, (3, 1, 1, 1)), # 'densely dashdotted',
+
+            (0, (3, 5, 1, 5, 1, 5)), # 'dashdotdotted',
+            (0, (3, 10, 1, 10, 1, 10)), # 'loosely dashdotdotted
+            (0, (3, 1, 1, 1, 1, 1))] # 'densely dashdotdotted
+        linestyles += linestyle_tuple
+        if n_colors>len(linestyles):
+            for i in range(len(linestyles),n_colors+2):
+                linestyles.append(linestyles[i-len(linestyles)])
+        # if n_colors>4: linestyles = np.tile(linestyles,int(np.floor(n_colors/4)+1))
         linestyles = linestyles[:n_colors]
         default_cycler = default_cycler+cycler('linestyle',linestyles)
     mpl.rcParams['axes.prop_cycle'] = default_cycler
@@ -190,7 +232,11 @@ def init_plot2(fontsize=20,figsize=(8,5.5),font='Arial',font_family='sans-serif'
 
 def plot_back_to_default_style():
     mpl.rcParams.update(mpl.rcParamsDefault)
-    
+
+def close_all_plots():
+    for i in range(100):
+        plt.close()
+        
 def custom_legend(ax, labels, shapes, colors, kwargs=None, legend_kwargs={}):
     """
     ax:     axes on which to plot the legend
@@ -213,23 +259,6 @@ def custom_legend(ax, labels, shapes, colors, kwargs=None, legend_kwargs={}):
     ]
     ax.legend(handles=legend_elements, **legend_kwargs)
 
-def close_all_plots():
-    for _ in range(100):
-        plt.close()
-
-def is_pareto_efficient_dumb(costs):
-    """
-    From https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
-
-    Find the pareto-efficient points
-    :param costs: An (n_points, n_costs) array
-    :return: A (n_points, ) boolean array, indicating whether each point is Pareto efficient
-    """
-    is_efficient = np.ones(costs.shape[0], dtype = bool)
-    for i, c in enumerate(costs):
-        is_efficient[i] = np.all(np.any(costs[:i]>c, axis=1)) and np.all(np.any(costs[i+1:]>c, axis=1))
-    return is_efficient
-        
 def reduce_mem_usage(df,inplace=False):
     '''Returns dataframe with columns changed to have dtypes of minimum
     size for the values contained within. Does not adjust object dtypes.
@@ -504,9 +533,9 @@ def easy_subplots(nplots, ncol=None, height_scale=1,width_scale=1,use_subplots=F
     if ncol is None: ncol=4
     nrows = int(np.ceil(nplots/ncol))
 
-    if width_ratios!=None or height_ratios!=None: use_subplots=True
-    if width_ratios==None: width_ratios=np.repeat(1,ncol)
-    if height_ratios==None: height_ratios=np.repeat(1,nrows)
+    if width_ratios is not None or height_ratios is not None: use_subplots=True
+    if width_ratios is None: width_ratios=np.repeat(1,ncol)
+    if height_ratios is None: height_ratios=np.repeat(1,nrows)
 
     if figsize is None:
         figsize = (7*ncol*width_scale,height_scale*6*int(np.ceil(nplots/ncol)))
@@ -788,7 +817,8 @@ def add_axis_labels(fig, option='ylabel_width', xloc=-0.1, yloc=1.03, zloc=None,
     subset2: moderate offset
     """
     skip = [skip] if type(skip)==int else skip if skip is not None else []
-    chars = character_list[10:36][start_letter:]
+    chars = list(character_list[10:36][start_letter:])
+    chars += [f'a{i}' for i in chars]
     ax = fig.axes
     ax = [a for e,a in enumerate(ax) if e not in skip]
     if alt_xlocs:
@@ -904,7 +934,7 @@ def try_float_conversion(string):
 
 def str_to_dict(string):
     new_string = re.sub(r"\{*\}*",'',string)
-    str_list = re.findall("'\w+':\s*[0-9a-zA-z-.]*",new_string)
+    str_list = re.findall(r"'\w+':\s*[0-9a-zA-z-.]*",new_string)
     new_dict = {i.split(':')[0].replace('"','').replace("'",''): try_float_conversion(''.join(i.split(':')[1:]).replace('"','').replace("'",'')) for i in str_list}
     return new_dict
 
@@ -919,7 +949,7 @@ def AIC_linearmodels(panel_model):
     return 2*K - 2*L
 
 def hausman_linearmodels(fe, re):
-    """
+    r"""
     Input fe, re
     
     If p<0.05, should use fixed effects
@@ -1058,4 +1088,23 @@ def convert_compare_to_df(result_dict, parens='std_errors'):
     ])
     return outputs
 
-init_plot2()
+def write_to_log(string, log_file_path='outputs/log.txt', reinitialize=False):
+    if reinitialize:
+        file = open(log_file_path, 'w')
+    else:
+        file = open(log_file_path, 'a')
+    file.write(string+'\n')
+    file.close()
+    
+def logit(x):
+    return 1/(1+np.exp(-x))
+
+def pickel_object(variable, filename):
+    with open(filename, 'wb') as handle:
+        pickle.dump(variable, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_pickle(filename):
+    with open(filename, 'rb') as handle:
+        b = pickle.load(handle)
+    return b
