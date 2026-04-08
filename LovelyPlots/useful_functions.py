@@ -1108,3 +1108,15 @@ def load_pickle(filename):
     with open(filename, 'rb') as handle:
         b = pickle.load(handle)
     return b
+
+def get_memory_usage(locs):
+    """pass locals() or globals(), or other dict of values, to get the sizes of all its pandas dataframes/series in ~MB"""
+    sizes = pd.Series()
+    for i in locs:
+        if hasattr(locs[i],'memory_usage') and i not in ['np']:
+            ph = locs[i].memory_usage(deep=True)
+            if hasattr(ph,'sum'):
+                sizes[i] = ph.sum()
+            else:
+                sizes[i] = ph
+    return sizes.sort_values()/1e6
