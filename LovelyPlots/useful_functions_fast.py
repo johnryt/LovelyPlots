@@ -76,14 +76,15 @@ def read_parquet_subset(file_path, filters=None, columns=None):
         return pd.read_parquet(file_path)
     if type(columns)==str:
         columns = [columns]
-    
-    columns_available = get_parquet_columns(file_path)
-    columns_want = (list(columns) if columns is not None else []) + (list(filters.keys()) if filters is not None else [])
-    if columns_want:
-        # Validate that all specified columns exist
-        missing_cols = set(columns) - set(columns_available)
-        if missing_cols:
-            raise ValueError(f"The following columns do not exist in the parquet file: {missing_cols}. \nOptions include {columns_available}")
+
+    if columns is not None:
+        columns_available = get_parquet_columns(file_path)
+        columns_want = (list(columns) if columns is not None else []) + (list(filters.keys()) if filters is not None else [])
+        if columns_want:
+            # Validate that all specified columns exist
+            missing_cols = set(columns) - set(columns_available)
+            if missing_cols:
+                raise ValueError(f"The following columns do not exist in the parquet file: {missing_cols}. \nOptions include {columns_available}")
 
     # Build pyarrow filter expressions for row-group-level pushdown
     filter_conditions = []
