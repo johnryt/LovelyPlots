@@ -98,6 +98,7 @@ def read_parquet_subset(file_path, filters=None, columns=None):
 def get_parquet_columns(file_path):
     """Get column names from a parquet file without loading the entire file."""
     import pyarrow.parquet as pq
+    from os import listdir
     if not file_path.endswith('.parquet'):
         # get first parquet file from folder
         file_path = f"{file_path}/{[i for i in listdir(file_path) if i.endswith('.parquet')][0]}"
