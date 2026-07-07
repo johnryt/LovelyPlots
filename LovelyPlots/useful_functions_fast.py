@@ -82,7 +82,7 @@ def read_parquet_subset(file_path, filters=None, columns=None):
         # Validate that all specified columns exist
         missing_cols = set(columns) - set(columns_available)
         if missing_cols:
-            raise ValueError(f"The following columns do not exist in the parquet file: {missing_cols}. \nOptions include {columns_available")
+            raise ValueError(f"The following columns do not exist in the parquet file: {missing_cols}. \nOptions include {columns_available}")
 
     # Build pyarrow filter expressions for row-group-level pushdown
     filter_conditions = []
