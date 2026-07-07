@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from os import listdir
 
 def write_to_log(string, log_file_path='outputs/log.txt', reinitialize=False):
     if reinitialize:
