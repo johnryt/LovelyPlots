@@ -86,6 +86,9 @@ def read_parquet_subset(file_path, filters=None, columns=None):
             if missing_cols:
                 raise ValueError(f"The following columns do not exist in the parquet file: {missing_cols}. \nOptions include {columns_available}")
 
+    if filters is None:
+        return pd.read_parquet(file_path, columns=columns)
+        
     # Build pyarrow filter expressions for row-group-level pushdown
     filter_conditions = []
     for col, values in filters.items():
