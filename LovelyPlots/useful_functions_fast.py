@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from os import listdir
+import pickle
 
 def write_to_log(string, log_file_path='outputs/log.txt', reinitialize=False):
     if reinitialize:
@@ -13,7 +14,7 @@ def write_to_log(string, log_file_path='outputs/log.txt', reinitialize=False):
 def logit(x):
     return 1/(1+np.exp(-x))
 
-def pickel_object(variable, filename):
+def save_pickle(variable, filename):
     with open(filename, 'wb') as handle:
         pickle.dump(variable, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
