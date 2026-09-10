@@ -92,6 +92,7 @@ def read_parquet_subset(file_path, filters=None, columns=None):
         
     # Build pyarrow filter expressions for row-group-level pushdown
     filter_conditions = []
+    filters = {i:filters[i] for i in filters if filters[i] is not None}
     for col, values in filters.items():
         if not isinstance(values, (list, tuple, set, np.ndarray, pd.arrays.ArrowStringArray)):
             values = [values]
